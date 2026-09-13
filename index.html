@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>愛車の維持費台帳</title>
+</head>
+<body>
+<style>
+  :root{
+    --paper: #eae6dd;
+    --paper-deep: #dfd9cb;
+    --ink: #1c2321;
+    --ink-soft: #4a4f47;
+    --rule: #c6bea9;
+    --rust: #a64b2a;
+    --rust-dark: #7e3a20;
+    --steel: #4c6b77;
+    --amber: #d8a438;
+    --olive: #6b7a4a;
+    --plum: #7a5c6e;
+    --teal: #3e5c63;
+    --tan: #b08968;
+    --grey: #8c8577;
+    --paper-card: #f2efe6;
+    font-size: 16px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  .cem-root{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', 'Segoe UI', sans-serif;
+    min-height: 100%;
+    padding: 28px 20px 60px;
+    line-height: 1.6;
+  }
+
+  .cem-mono{ font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .cem-wrap{ max-width: 1180px; margin: 0 auto; }
+
+  /* ---------- Header / nameplate ---------- */
+  .cem-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    border-bottom: 3px double var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .cem-title-block{ flex: 1; min-width: 240px; }
+  .cem-eyebrow{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+    border-left: 3px solid var(--rust);
+    padding-left: 8px;
+  }
+  .cem-vehicle-input{
+    font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--ink);
+    padding: 2px 0;
+    width: 100%;
+    max-width: 460px;
+  }
+  .cem-vehicle-input:hover, .cem-vehicle-input:focus{
+    border-bottom: 2px solid var(--rule);
+    outline: none;
+  }
+  .cem-vehicle-input::placeholder{ color: var(--ink-soft); opacity: .55; }
+
+  .cem-total-plate{
+    text-align: right;
+    border: 1px solid var(--ink);
+    padding: 10px 18px;
+    background: var(--paper-card);
+  }
+  .cem-total-plate .cem-label{ font-size: 0.72rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .cem-total-plate .cem-amount{
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--rust-dark);
+  }
+
+  /* ---------- Layout ---------- */
+  .cem-grid{
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 860px){
+    .cem-grid{ grid-template-columns: 1fr; }
+  }
+
+  .cem-panel{
+    background: var(--paper-card);
+    border: 1px solid var(--rule);
+    padding: 18px 18px 20px;
+  }
+  .cem-panel + .cem-panel{ margin-top: 18px; }
+  .cem-panel h2{
+    font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+    font-size: 1.05rem;
+    margin: 0 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* ---------- Form ---------- */
+  .cem-field{ margin-bottom: 12px; }
+  .cem-field label{
+    display: block;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .cem-field input, .cem-field select{
+    width: 100%;
+    padding: 8px 9px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--ink);
+  }
+  .cem-field input:focus, .cem-field select:focus{
+    outline: 2px solid var(--steel);
+    outline-offset: 1px;
+  }
+  .cem-row2{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .cem-btn{
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--rust);
+    color: #fff;
+    border: none;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.92rem;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .cem-btn:hover{ background: var(--rust-dark); }
+  .cem-btn:focus-visible{ outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .cem-btn-ghost{
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  .cem-btn-ghost:hover{ background: var(--paper-deep); color: var(--ink); }
+
+  .cem-error{
+    background: #f4e3dd;
+    border: 1px solid var(--rust);
+    color: var(--rust-dark);
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  /* ---------- Vehicle spec panel ---------- */
+  .cem-vehicle-panel{
+    margin-bottom: 22px;
+  }
+  .cem-vehicle-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px 14px;
+  }
+  .cem-vehicle-grid .cem-field{ margin-bottom: 0; }
+  .cem-vehicle-note{
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--rule);
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+  }
+  .cem-vehicle-note .cem-mono{ color: var(--ink); font-weight: 700; }
+  .cem-shaken-warn{ color: var(--amber) !important; }
+  .cem-shaken-overdue{ color: var(--rust-dark) !important; }
+
+  /* ---------- Stat cards ---------- */
+  .cem-stats{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 720px){ .cem-stats{ grid-template-columns: repeat(2, 1fr); } }
+  .cem-stat{
+    border: 1px solid var(--rule);
+    background: var(--paper-card);
+    padding: 12px 14px;
+  }
+  .cem-stat .cem-label{ font-size: 0.74rem; color: var(--ink-soft); margin-bottom: 4px; }
+  .cem-stat .cem-value{ font-size: 1.35rem; font-weight: 700; }
+  .cem-stat .cem-sub{ font-size: 0.72rem; color: var(--ink-soft); margin-top: 2px; }
+
+  /* ---------- Charts ---------- */
+  .cem-charts{
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 720px){ .cem-charts{ grid-template-columns: 1fr; } }
+  .cem-chart-box{ position: relative; height: 260px; }
+  .cem-chart-box svg{ display: block; }
+  .cem-legend{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 10px;
+    font-size: 0.78rem;
+  }
+  .cem-legend-item{ display: flex; align-items: center; gap: 6px; }
+  .cem-legend-swatch{ width: 10px; height: 10px; flex: none; }
+  .cem-legend-pct{ color: var(--ink-soft); }
+
+  /* ---------- Ledger table ---------- */
+  .cem-filters{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .cem-filters select, .cem-filters input{
+    padding: 7px 9px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.85rem;
+  }
+
+  table.cem-ledger{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .cem-ledger thead th{
+    text-align: left;
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+    padding: 6px 8px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .cem-ledger tbody td{
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .cem-ledger tbody tr:hover{ background: var(--paper-deep); }
+  .cem-tag{
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.74rem;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .cem-amount-cell{ font-weight: 700; text-align: right; }
+  .cem-del{
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 0.78rem;
+    text-decoration: underline;
+    padding: 0;
+  }
+  .cem-del:hover{ color: var(--rust-dark); }
+
+  .cem-empty{
+    text-align: center;
+    padding: 30px 10px;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
+
+  .cem-loading{ text-align: center; padding: 60px 10px; color: var(--ink-soft); }
+
+  .cem-footer-note{
+    margin-top: 26px;
+    font-size: 0.76rem;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+</style>
+
+<div class="cem-root">
+  <div class="cem-wrap" id="cem-app">
+    <div class="cem-loading" id="cem-loading">読み込み中…</div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // Claude.aiのチャット内で開いている場合は window.storage が自動的に使えるが、
+  // ダウンロードしたファイルをブラウザで直接開いた場合は存在しないため、
+  // その場合だけブラウザのlocalStorage（不可なら一時メモリ）で代用する。
+  let usingLocalFallback = false;
+  let localFallbackPersistent = true;
+  if (typeof window.storage === 'undefined'){
+    usingLocalFallback = true;
+    const PFX = 'car-expenses-app:';
+    const memoryStore = {};
+    let lsOk = false;
+    try{
+      const t = '__cem_probe__';
+      window.localStorage.setItem(t, '1');
+      window.localStorage.removeItem(t);
+      lsOk = true;
+    }catch(e){ lsOk = false; }
+    localFallbackPersistent = lsOk;
+
+    function scopedKey(key, shared){ return PFX + (shared ? 'shared:' : 'me:') + key; }
+
+    window.storage = {
+      async get(key, shared){
+        const k = scopedKey(key, shared);
+        const raw = lsOk ? window.localStorage.getItem(k) : (k in memoryStore ? memoryStore[k] : null);
+        if (raw == null) throw new Error('key not found: ' + key);
+        return { key, value: raw, shared: !!shared };
+      },
+      async set(key, value, shared){
+        const k = scopedKey(key, shared);
+        try{
+          if (lsOk) window.localStorage.setItem(k, value); else memoryStore[k] = value;
+          return { key, value, shared: !!shared };
+        }catch(e){ return null; }
+      },
+      async delete(key, shared){
+        const k = scopedKey(key, shared);
+        if (lsOk) window.localStorage.removeItem(k); else delete memoryStore[k];
+        return { key, deleted: true, shared: !!shared };
+      },
+      async list(prefix, shared){
+        const base = scopedKey('', shared);
+        const full = base + (prefix || '');
+        let keys = [];
+        if (lsOk){
+          for (let i = 0; i < window.localStorage.length; i++){
+            const kk = window.localStorage.key(i);
+            if (kk && kk.indexOf(full) === 0) keys.push(kk.slice(base.length));
+          }
+        } else {
+          keys = Object.keys(memoryStore).filter(kk => kk.indexOf(full) === 0).map(kk => kk.slice(base.length));
+        }
+        return { keys, prefix, shared: !!shared };
+      }
+    };
+  }
+
+  const CATEGORY_DEFS = [
+    { key: 'ガソリン代', color: '#a64b2a' },
+    { key: '車検代',     color: '#4c6b77' },
+    { key: '部品代',     color: '#d8a438' },
+    { key: '整備工賃',   color: '#6b7a4a' },
+    { key: '保険料',     color: '#7a5c6e' },
+    { key: '自動車税',   color: '#3e5c63' },
+    { key: '駐車場代',   color: '#b08968' },
+    { key: 'その他',     color: '#8c8577' },
+  ];
+  const CATEGORY_COLOR = Object.fromEntries(CATEGORY_DEFS.map(c => [c.key, c.color]));
+
+  const root = document.getElementById('cem-app');
+
+  let entries = [];
+  let vehicleName = '';
+  let vehicleInfo = {
+    acquisitionDate: '', acquisitionMileage: null, acquisitionPrice: null,
+    modelCode: '', firstRegistration: '', displacement: null, seatingCapacity: null,
+    fuelType: '', loanPayment: null, nextShakenDate: ''
+  };
+  let filterCategory = 'all';
+  let filterMonths = 'all'; // all | 3 | 6 | 12
+  let storageError = null;
+
+  function fmtYen(n){
+    return '¥' + Math.round(n).toLocaleString('ja-JP');
+  }
+  function fmtDate(d){
+    return d;
+  }
+  function uid(){
+    return 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function monthKey(dateStr){
+    return dateStr.slice(0, 7); // YYYY-MM
+  }
+
+  async function loadData(){
+    try{
+      const v = await window.storage.get('vehicle-info', false).catch(() => null);
+      if (v && v.value){
+        try{
+          const parsed = JSON.parse(v.value);
+          vehicleName = parsed.name || '';
+          vehicleInfo = Object.assign({}, vehicleInfo, parsed.info || {});
+        }catch(e){}
+      }
+    }catch(e){ /* key absent */ }
+
+    try{
+      const e = await window.storage.get('entries', false).catch(() => null);
+      if (e && e.value){
+        try{ entries = JSON.parse(e.value) || []; }catch(err){ entries = []; }
+      }
+    }catch(e){ /* key absent */ }
+  }
+
+  async function saveEntries(){
+    try{
+      const r = await window.storage.set('entries', JSON.stringify(entries), false);
+      if (!r) storageError = '保存に失敗しました。もう一度お試しください。';
+      else storageError = null;
+    }catch(err){
+      storageError = '保存中にエラーが発生しました。';
+    }
+  }
+
+  async function saveVehicleInfo(){
+    try{
+      await window.storage.set('vehicle-info', JSON.stringify({ name: vehicleName, info: vehicleInfo }), false);
+    }catch(err){ /* non-critical */ }
+  }
+
+  function computeStats(){
+    const total = entries.reduce((s, e) => s + e.amount, 0);
+    const now = new Date();
+    const curMonth = now.toISOString().slice(0,7);
+    const thisMonthTotal = entries.filter(e => monthKey(e.date) === curMonth).reduce((s,e)=>s+e.amount,0);
+
+    const monthsSet = new Set(entries.map(e => monthKey(e.date)));
+    const monthCount = Math.max(monthsSet.size, 1);
+    const avgMonthly = total / monthCount;
+
+    const byCategory = {};
+    entries.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
+    let topCategory = '—';
+    let topAmount = 0;
+    Object.entries(byCategory).forEach(([k,v]) => { if (v > topAmount){ topAmount = v; topCategory = k; } });
+
+    const odometers = entries.filter(e => e.mileage != null && !isNaN(e.mileage)).map(e => e.mileage);
+    let perKm = null;
+    if (odometers.length >= 2){
+      const dist = Math.max(...odometers) - Math.min(...odometers);
+      if (dist > 0) perKm = total / dist;
+    }
+
+    const fuelEntries = entries.filter(e => e.category === 'ガソリン代' && e.liters != null && e.liters > 0);
+    let avgFuelPricePerLiter = null;
+    if (fuelEntries.length > 0){
+      const totalLiters = fuelEntries.reduce((s,e)=>s+e.liters,0);
+      const totalFuelCost = fuelEntries.reduce((s,e)=>s+e.amount,0);
+      if (totalLiters > 0) avgFuelPricePerLiter = totalFuelCost / totalLiters;
+    }
+
+    let shakenDays = null;
+    if (vehicleInfo.nextShakenDate){
+      const today = new Date(); today.setHours(0,0,0,0);
+      const shaken = new Date(vehicleInfo.nextShakenDate + 'T00:00:00');
+      shakenDays = Math.round((shaken - today) / 86400000);
+    }
+
+    let annualCost = null;
+    if (vehicleInfo.acquisitionDate){
+      const acq = new Date(vehicleInfo.acquisitionDate + 'T00:00:00');
+      const years = (Date.now() - acq.getTime()) / (365.25 * 86400000);
+      if (years >= 0.08) annualCost = total / years; // ~1ヶ月未満は計算しない
+    }
+
+    return { total, thisMonthTotal, avgMonthly, topCategory, topAmount, perKm, avgFuelPricePerLiter, shakenDays, annualCost, byCategory };
+  }
+
+  function last12Months(){
+    const arr = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      arr.push(d.toISOString().slice(0,7));
+    }
+    return arr;
+  }
+
+  function render(){
+    const stats = computeStats();
+    const months = last12Months();
+
+    root.innerHTML = `
+      <div class="cem-header">
+        <div class="cem-title-block">
+          <p class="cem-eyebrow">愛車の維持費台帳</p>
+          <input class="cem-vehicle-input" id="cem-vehicle" type="text"
+                 placeholder="車種・愛称を入力（例：CX-5 / はまちゃん号）"
+                 value="${escapeAttr(vehicleName)}" />
+        </div>
+        <div class="cem-total-plate">
+          <div class="cem-label">総支出</div>
+          <div class="cem-amount cem-mono">${fmtYen(stats.total)}</div>
+        </div>
+      </div>
+
+      ${storageError ? `<div class="cem-error">${storageError}</div>` : ''}
+      ${(usingLocalFallback && !localFallbackPersistent) ? `<div class="cem-error">このブラウザ（プライベートモードなど）ではデータを保存できません。タブを閉じると記録が失われるのでご注意ください。</div>` : ''}
+
+      <div class="cem-panel cem-vehicle-panel">
+        <h2>車両情報</h2>
+        <div class="cem-vehicle-grid">
+          <div class="cem-field">
+            <label for="cem-vi-acqdate">取得日</label>
+            <input type="date" id="cem-vi-acqdate" value="${escapeAttr(vehicleInfo.acquisitionDate || '')}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-acqmileage">取得時走行距離（km）</label>
+            <input type="number" id="cem-vi-acqmileage" min="0" step="1" placeholder="例：15000" value="${vehicleInfo.acquisitionMileage != null ? vehicleInfo.acquisitionMileage : ''}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-acqprice">取得価格（円）</label>
+            <input type="number" id="cem-vi-acqprice" min="0" step="1" placeholder="例：2500000" value="${vehicleInfo.acquisitionPrice != null ? vehicleInfo.acquisitionPrice : ''}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-model">型式</label>
+            <input type="text" id="cem-vi-model" placeholder="例：DBA-XXXXX" value="${escapeAttr(vehicleInfo.modelCode || '')}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-firstreg">初度登録年月</label>
+            <input type="month" id="cem-vi-firstreg" value="${escapeAttr(vehicleInfo.firstRegistration || '')}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-displacement">総排気量（cc）</label>
+            <input type="number" id="cem-vi-displacement" min="0" step="1" placeholder="例：1998" value="${vehicleInfo.displacement != null ? vehicleInfo.displacement : ''}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-seats">乗車定員（人）</label>
+            <input type="number" id="cem-vi-seats" min="0" step="1" placeholder="例：5" value="${vehicleInfo.seatingCapacity != null ? vehicleInfo.seatingCapacity : ''}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-fueltype">燃料の種類</label>
+            <select id="cem-vi-fueltype">
+              <option value="">選択してください</option>
+              ${['レギュラー','ハイオク','軽油','ハイブリッド','EV','その他'].map(f => `<option value="${f}" ${vehicleInfo.fuelType===f?'selected':''}>${f}</option>`).join('')}
+            </select>
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-loan">月々のローン返済額（円）</label>
+            <input type="number" id="cem-vi-loan" min="0" step="1" placeholder="例：25000" value="${vehicleInfo.loanPayment != null ? vehicleInfo.loanPayment : ''}">
+          </div>
+          <div class="cem-field">
+            <label for="cem-vi-shaken">次回車検日</label>
+            <input type="date" id="cem-vi-shaken" value="${escapeAttr(vehicleInfo.nextShakenDate || '')}">
+          </div>
+        </div>
+        ${vehicleInfo.acquisitionPrice != null ? `
+        <div class="cem-vehicle-note">
+          取得価格を含めた総コスト：<span class="cem-mono">${fmtYen((vehicleInfo.acquisitionPrice || 0) + stats.total)}</span>
+          （取得価格 <span class="cem-mono">${fmtYen(vehicleInfo.acquisitionPrice)}</span> + これまでの維持費 <span class="cem-mono">${fmtYen(stats.total)}</span>）
+        </div>` : ''}
+      </div>
+
+      <div class="cem-grid">
+        <div>
+          <div class="cem-panel">
+            <h2>記録を追加</h2>
+            <form id="cem-form">
+              <div class="cem-row2">
+                <div class="cem-field">
+                  <label for="cem-date">日付</label>
+                  <input type="date" id="cem-date" required value="${new Date().toISOString().slice(0,10)}">
+                </div>
+                <div class="cem-field">
+                  <label for="cem-category">カテゴリ</label>
+                  <select id="cem-category">
+                    ${CATEGORY_DEFS.map(c => `<option value="${c.key}">${c.key}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+              <div class="cem-field">
+                <label for="cem-amount">金額（円）</label>
+                <input type="number" id="cem-amount" min="0" step="1" required placeholder="例：5500">
+              </div>
+              <div class="cem-field">
+                <label for="cem-mileage">走行距離（累計オドメーター・任意 / km）</label>
+                <input type="number" id="cem-mileage" min="0" step="1" placeholder="例：42350">
+              </div>
+              <div class="cem-field" id="cem-liters-field" style="display:none">
+                <label for="cem-liters">給油量（リットル）</label>
+                <input type="number" id="cem-liters" min="0" step="0.01" placeholder="例：35.2">
+              </div>
+              <div class="cem-field">
+                <label for="cem-memo">メモ（任意）</label>
+                <input type="text" id="cem-memo" placeholder="例：エンジンオイル交換">
+              </div>
+              <button type="submit" class="cem-btn">記録を追加する</button>
+            </form>
+          </div>
+
+          <div class="cem-panel">
+            <h2>データの管理</h2>
+            <button class="cem-btn cem-btn-ghost" id="cem-clear">すべての記録を削除</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="cem-stats">
+            <div class="cem-stat">
+              <div class="cem-label">今月の支出</div>
+              <div class="cem-value cem-mono">${fmtYen(stats.thisMonthTotal)}</div>
+            </div>
+            <div class="cem-stat">
+              <div class="cem-label">月平均支出</div>
+              <div class="cem-value cem-mono">${fmtYen(stats.avgMonthly)}</div>
+            </div>
+            <div class="cem-stat">
+              <div class="cem-label">最も支出が多い項目</div>
+              <div class="cem-value">${stats.topCategory}</div>
+              <div class="cem-sub cem-mono">${stats.topAmount ? fmtYen(stats.topAmount) : ''}</div>
+            </div>
+            <div class="cem-stat">
+              <div class="cem-label">走行1kmあたりの維持費</div>
+              <div class="cem-value cem-mono">${stats.perKm != null ? '¥' + stats.perKm.toFixed(1) : '—'}</div>
+              <div class="cem-sub">${stats.perKm != null ? '' : 'オドメーターを2回以上記録すると表示'}</div>
+            </div>
+            <div class="cem-stat">
+              <div class="cem-label">ガソリン平均単価（1L）</div>
+              <div class="cem-value cem-mono">${stats.avgFuelPricePerLiter != null ? '¥' + stats.avgFuelPricePerLiter.toFixed(1) : '—'}</div>
+              <div class="cem-sub">${stats.avgFuelPricePerLiter != null ? '' : '給油量を入力すると表示'}</div>
+            </div>
+            <div class="cem-stat">
+              <div class="cem-label">次回車検まで</div>
+              <div class="cem-value cem-mono ${stats.shakenDays == null ? '' : (stats.shakenDays < 0 ? 'cem-shaken-overdue' : (stats.shakenDays <= 30 ? 'cem-shaken-warn' : ''))}">
+                ${stats.shakenDays == null ? '—' : (stats.shakenDays < 0 ? `期限切れ（${Math.abs(stats.shakenDays)}日経過）` : `残り${stats.shakenDays}日`)}
+              </div>
+              <div class="cem-sub">${stats.shakenDays == null ? '車両情報から日付を登録' : ''}</div>
+            </div>
+            <div class="cem-stat">
+              <div class="cem-label">年間維持費（概算）</div>
+              <div class="cem-value cem-mono">${stats.annualCost != null ? fmtYen(stats.annualCost) : '—'}</div>
+              <div class="cem-sub">${stats.annualCost != null ? '' : '取得日を登録すると表示'}</div>
+            </div>
+          </div>
+
+          <div class="cem-panel">
+            <h2>月別推移</h2>
+            <div class="cem-chart-box" id="cem-chart-trend"></div>
+          </div>
+
+          <div class="cem-panel">
+            <div class="cem-charts">
+              <div>
+                <h2>カテゴリ別ランキング</h2>
+                <div class="cem-chart-box" id="cem-chart-bar"></div>
+              </div>
+              <div>
+                <h2>内訳</h2>
+                <div class="cem-chart-box" id="cem-chart-donut"></div>
+                <div id="cem-chart-donut-legend" class="cem-legend"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cem-panel">
+            <h2>記録一覧</h2>
+            <div class="cem-filters">
+              <select id="cem-filter-category">
+                <option value="all">すべてのカテゴリ</option>
+                ${CATEGORY_DEFS.map(c => `<option value="${c.key}" ${filterCategory===c.key?'selected':''}>${c.key}</option>`).join('')}
+              </select>
+              <select id="cem-filter-period">
+                <option value="all" ${filterMonths==='all'?'selected':''}>すべての期間</option>
+                <option value="3" ${filterMonths==='3'?'selected':''}>直近3か月</option>
+                <option value="6" ${filterMonths==='6'?'selected':''}>直近6か月</option>
+                <option value="12" ${filterMonths==='12'?'selected':''}>直近12か月</option>
+              </select>
+            </div>
+            ${renderTable()}
+          </div>
+        </div>
+      </div>
+
+      <p class="cem-footer-note">${usingLocalFallback ? (localFallbackPersistent ? 'ダウンロード版として、このブラウザ内にデータを保存しています（他の端末とは同期されません）' : 'このブラウザではデータを保存できないため、タブを閉じると記録は失われます') : 'データはこの端末のあなたのアカウントにのみ保存されます'}</p>
+    `;
+
+    bindEvents();
+    renderCharts(stats, months);
+  }
+
+  function filteredEntries(){
+    let list = entries.slice().sort((a,b) => b.date.localeCompare(a.date));
+    if (filterCategory !== 'all') list = list.filter(e => e.category === filterCategory);
+    if (filterMonths !== 'all'){
+      const n = parseInt(filterMonths, 10);
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - n);
+      const cutoffStr = cutoff.toISOString().slice(0,10);
+      list = list.filter(e => e.date >= cutoffStr);
+    }
+    return list;
+  }
+
+  function renderTable(){
+    const list = filteredEntries();
+    if (list.length === 0){
+      return `<div class="cem-empty">まだ記録がありません。左のフォームから最初の1件を追加してください。</div>`;
+    }
+    return `
+      <div style="overflow-x:auto">
+      <table class="cem-ledger">
+        <thead>
+          <tr>
+            <th>日付</th><th>カテゴリ</th><th>メモ</th><th>走行距離</th><th>給油量・単価</th><th style="text-align:right">金額</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(e => `
+            <tr>
+              <td class="cem-mono">${fmtDate(e.date)}</td>
+              <td><span class="cem-tag" style="background:${CATEGORY_COLOR[e.category] || '#8c8577'}">${e.category}</span></td>
+              <td>${escapeHtml(e.memo || '')}</td>
+              <td class="cem-mono">${e.mileage != null ? e.mileage.toLocaleString('ja-JP') + ' km' : ''}</td>
+              <td class="cem-mono">${(e.liters != null && e.liters > 0) ? `${e.liters.toLocaleString('ja-JP')} L / ¥${(e.amount / e.liters).toFixed(1)}/L` : ''}</td>
+              <td class="cem-amount-cell cem-mono">${fmtYen(e.amount)}</td>
+              <td><button class="cem-del" data-id="${e.id}">削除</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      </div>
+    `;
+  }
+
+  function svgTrendChart(labels, values){
+    const w = 640, h = 220, padLeft = 46, padBottom = 22, padTop = 16, padRight = 8;
+    const chartW = w - padLeft - padRight;
+    const chartH = h - padTop - padBottom;
+    const max = Math.max(1, ...values);
+    const n = Math.max(values.length, 1);
+    const slot = chartW / n;
+    const barW = Math.max(slot * 0.55, 4);
+    let bars = '';
+    let labelsSvg = '';
+    values.forEach((v, i) => {
+      const bh = (v / max) * chartH;
+      const x = padLeft + i * slot + (slot - barW) / 2;
+      const y = padTop + (chartH - bh);
+      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(bh,0).toFixed(1)}" fill="#a64b2a"/>`;
+      labelsSvg += `<text x="${(x + barW/2).toFixed(1)}" y="${h-6}" font-size="9" fill="#4a4f47" text-anchor="middle">${labels[i]}</text>`;
+    });
+    const baseline = `<line x1="${padLeft}" y1="${padTop+chartH}" x2="${padLeft+chartW}" y2="${padTop+chartH}" stroke="#c6bea9" stroke-width="1"/>`;
+    const maxLabel = `<text x="${padLeft-6}" y="${padTop+8}" font-size="9" fill="#4a4f47" text-anchor="end">¥${Math.round(max).toLocaleString('ja-JP')}</text>`;
+    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img">${baseline}${bars}${labelsSvg}${maxLabel}</svg>`;
+  }
+
+  function svgHBarChart(labels, values){
+    const w = 480;
+    const rowH = 26, gap = 10;
+    const n = Math.max(labels.length, 1);
+    const h = n * (rowH + gap) - gap + 6;
+    const max = Math.max(1, ...values);
+    const labelW = 84;
+    const valueW = 68;
+    const barAreaW = w - labelW - valueW;
+    let rows = '';
+    labels.forEach((lab, i) => {
+      const v = values[i];
+      const bw = (v / max) * barAreaW;
+      const y = i * (rowH + gap);
+      const color = CATEGORY_COLOR[lab] || '#8c8577';
+      rows += `
+        <text x="0" y="${(y + rowH/2 + 4).toFixed(1)}" font-size="11" fill="#1c2321">${lab}</text>
+        <rect x="${labelW}" y="${(y+3).toFixed(1)}" width="${Math.max(bw,0).toFixed(1)}" height="${rowH-6}" fill="${color}"/>
+        <text x="${(labelW + bw + 6).toFixed(1)}" y="${(y + rowH/2 + 4).toFixed(1)}" font-size="10" fill="#4a4f47">¥${Math.round(v).toLocaleString('ja-JP')}</text>
+      `;
+    });
+    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img">${rows}</svg>`;
+  }
+
+  function svgDonutChart(labels, values){
+    const size = 200, cx = size/2, cy = size/2, r = 70, strokeW = 32;
+    const total = values.reduce((s,v) => s+v, 0) || 1;
+    const circumference = 2 * Math.PI * r;
+    let acc = 0;
+    let circles = '';
+    if (labels.length === 0){
+      circles = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#c6bea9" stroke-width="${strokeW}"/>`;
+    } else {
+      labels.forEach((lab, i) => {
+        const v = values[i];
+        const frac = v / total;
+        const dash = frac * circumference;
+        const gapLen = circumference - dash;
+        const color = CATEGORY_COLOR[lab] || '#8c8577';
+        const rotation = (acc / total) * 360 - 90;
+        circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-dasharray="${dash.toFixed(1)} ${gapLen.toFixed(1)}" transform="rotate(${rotation.toFixed(1)} ${cx} ${cy})"/>`;
+        acc += v;
+      });
+    }
+    return `<svg viewBox="0 0 ${size} ${size}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img">${circles}</svg>`;
+  }
+
+  function buildLegendHTML(labels, values){
+    const total = values.reduce((s,v) => s+v, 0) || 1;
+    if (labels.length === 0) return `<div class="cem-sub">データがありません</div>`;
+    return labels.map((lab, i) => {
+      const pct = Math.round((values[i] / total) * 100);
+      const color = CATEGORY_COLOR[lab] || '#8c8577';
+      return `<span class="cem-legend-item"><span class="cem-legend-swatch" style="background:${color}"></span>${lab} <span class="cem-legend-pct">${pct}%</span></span>`;
+    }).join('');
+  }
+
+  function renderCharts(stats, months){
+    // trend (last 12 months)
+    const trendData = months.map(m => entries.filter(e => monthKey(e.date) === m).reduce((s,e)=>s+e.amount,0));
+    const trendLabels = months.map(m => `${parseInt(m.split('-')[1],10)}月`);
+    const elTrend = document.getElementById('cem-chart-trend');
+    if (elTrend) elTrend.innerHTML = svgTrendChart(trendLabels, trendData);
+
+    // category ranking + donut breakdown
+    const catEntries = Object.entries(stats.byCategory).sort((a,b) => b[1]-a[1]);
+    const catLabels = catEntries.map(c => c[0]);
+    const catValues = catEntries.map(c => c[1]);
+
+    const elBar = document.getElementById('cem-chart-bar');
+    if (elBar) elBar.innerHTML = svgHBarChart(catLabels, catValues);
+
+    const elDonut = document.getElementById('cem-chart-donut');
+    if (elDonut) elDonut.innerHTML = svgDonutChart(catLabels, catValues);
+
+    const elLegend = document.getElementById('cem-chart-donut-legend');
+    if (elLegend) elLegend.innerHTML = buildLegendHTML(catLabels, catValues);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  function bindEvents(){
+    const catSelect = document.getElementById('cem-category');
+    const litersField = document.getElementById('cem-liters-field');
+    function syncLitersVisibility(){
+      if (!catSelect || !litersField) return;
+      litersField.style.display = catSelect.value === 'ガソリン代' ? 'block' : 'none';
+    }
+    if (catSelect){
+      syncLitersVisibility();
+      catSelect.addEventListener('change', syncLitersVisibility);
+    }
+
+    const vInput = document.getElementById('cem-vehicle');
+    if (vInput){
+      vInput.addEventListener('change', async () => {
+        vehicleName = vInput.value;
+        await saveVehicleInfo();
+      });
+    }
+
+    function bindViText(id, key){
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', async () => {
+        vehicleInfo[key] = el.value || '';
+        await saveVehicleInfo();
+        render();
+      });
+    }
+    function bindViNumber(id, key){
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', async () => {
+        vehicleInfo[key] = el.value !== '' ? parseFloat(el.value) : null;
+        await saveVehicleInfo();
+        render();
+      });
+    }
+    bindViText('cem-vi-acqdate', 'acquisitionDate');
+    bindViNumber('cem-vi-acqmileage', 'acquisitionMileage');
+    bindViNumber('cem-vi-acqprice', 'acquisitionPrice');
+    bindViText('cem-vi-model', 'modelCode');
+    bindViText('cem-vi-firstreg', 'firstRegistration');
+    bindViNumber('cem-vi-displacement', 'displacement');
+    bindViNumber('cem-vi-seats', 'seatingCapacity');
+    bindViText('cem-vi-fueltype', 'fuelType');
+    bindViNumber('cem-vi-loan', 'loanPayment');
+    bindViText('cem-vi-shaken', 'nextShakenDate');
+
+    const form = document.getElementById('cem-form');
+    if (form){
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const date = document.getElementById('cem-date').value;
+        const category = document.getElementById('cem-category').value;
+        const amount = parseFloat(document.getElementById('cem-amount').value);
+        const mileageRaw = document.getElementById('cem-mileage').value;
+        const litersRaw = document.getElementById('cem-liters').value;
+        const memo = document.getElementById('cem-memo').value;
+        if (!date || isNaN(amount) || amount < 0) return;
+        entries.push({
+          id: uid(),
+          date, category, amount,
+          mileage: mileageRaw !== '' ? parseFloat(mileageRaw) : null,
+          liters: (category === 'ガソリン代' && litersRaw !== '') ? parseFloat(litersRaw) : null,
+          memo: memo || ''
+        });
+        await saveEntries();
+        render();
+      });
+    }
+
+    document.querySelectorAll('.cem-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        entries = entries.filter(e => e.id !== id);
+        await saveEntries();
+        render();
+      });
+    });
+
+    const clearBtn = document.getElementById('cem-clear');
+    if (clearBtn){
+      clearBtn.addEventListener('click', async () => {
+        if (!confirm('すべての記録を削除します。よろしいですか？')) return;
+        entries = [];
+        await saveEntries();
+        render();
+      });
+    }
+
+    const fc = document.getElementById('cem-filter-category');
+    if (fc) fc.addEventListener('change', () => { filterCategory = fc.value; render(); });
+
+    const fp = document.getElementById('cem-filter-period');
+    if (fp) fp.addEventListener('change', () => { filterMonths = fp.value; render(); });
+  }
+
+  (async function init(){
+    await loadData();
+    render();
+  })();
+
+})();
+</script>
+</body>
+</html>
